@@ -1,4 +1,4 @@
-// Variables de entorno: en local salen de .env, en Cloud Run de la configuración del servicio
+// Variables de entorno: en local salen de .env, en Vercel de la configuración del proyecto
 function requerida(nombre: string) {
   const valor = process.env[nombre]
   if (!valor) throw new Error(`Falta la variable de entorno ${nombre}`)
