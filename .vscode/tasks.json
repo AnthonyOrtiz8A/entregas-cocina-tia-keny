@@ -1,0 +1,37 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Iniciar app (backend + frontend)",
+      "dependsOn": ["Backend", "Frontend"],
+      "dependsOrder": "parallel",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "Backend",
+      "type": "npm",
+      "script": "dev",
+      "path": "backend",
+      "isBackground": true,
+      "presentation": { "group": "app", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Frontend",
+      "type": "npm",
+      "script": "dev",
+      "path": "frontend",
+      "isBackground": true,
+      "presentation": { "group": "app", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Crear base de datos y tablas",
+      "type": "npm",
+      "script": "db:setup",
+      "path": "backend",
+      "problemMatcher": []
+    }
+  ]
+}
