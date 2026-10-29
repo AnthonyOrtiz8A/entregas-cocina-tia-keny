@@ -50,3 +50,6 @@ app.onError((err, c) => {
   console.error(err)
   return c.json({ message: 'Error interno del servidor' }, 500)
 })
+
+// Vercel detecta Hono y usa este export como función del servidor
+export default app
