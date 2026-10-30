@@ -53,11 +53,10 @@ export function useAvisos() {
     return () => navigator.serviceWorker.removeEventListener('message', alMensaje)
   }, [qc, navigate])
 
-  // Le pide al servidor que revise atrasos: así llegan los avisos a los teléfonos con la app cerrada
+  // Le pide al servidor que revise atrasos: así llegan los avisos a los teléfonos con la app cerrada.
+  // También en segundo plano, para que una compu con la app minimizada siga revisando.
   useEffect(() => {
-    const revisar = () => {
-      if (document.visibilityState === 'visible') api.post('/avisos/revisar').catch(() => {})
-    }
+    const revisar = () => api.post('/avisos/revisar').catch(() => {})
     revisar()
     const id = setInterval(revisar, 60_000)
     return () => clearInterval(id)
