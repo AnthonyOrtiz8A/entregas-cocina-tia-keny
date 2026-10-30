@@ -52,7 +52,7 @@ export function EntregasPage() {
     }
   }, [entregas, ahora, minutosAdvertencia])
 
-  // El número de cada entrega sigue el orden por hora del día completo
+  // El número de cada entrega es su orden de llegada en el día: uno nuevo no cambia el de los demás
   const visibles = entregas
     .map((e, i) => ({ entrega: e, numero: i + 1 }))
     .filter(({ entrega }) =>

@@ -11,7 +11,7 @@ import {
   esCambioPropio,
   sincronizarSuscripcion,
 } from '../lib/avisos'
-import { hoyISO, urgenciaDe, type Urgencia } from '../lib/fechas'
+import { hoyISO, minutosRestantes, urgenciaDe, type Urgencia } from '../lib/fechas'
 import type { Entrega } from '../types'
 import { useAhora } from './useAhora'
 import { claves, useConfiguracion, useEntregasDelDia } from './useEntregas'
@@ -53,11 +53,10 @@ export function useAvisos() {
     return () => navigator.serviceWorker.removeEventListener('message', alMensaje)
   }, [qc, navigate])
 
-  // Le pide al servidor que revise atrasos: así llegan los avisos a los teléfonos con la app cerrada
+  // Le pide al servidor que revise atrasos: así llegan los avisos a los teléfonos con la app cerrada.
+  // También en segundo plano, para que una compu con la app minimizada siga revisando.
   useEffect(() => {
-    const revisar = () => {
-      if (document.visibilityState === 'visible') api.post('/avisos/revisar').catch(() => {})
-    }
+    const revisar = () => api.post('/avisos/revisar').catch(() => {})
     revisar()
     const id = setInterval(revisar, 60_000)
     return () => clearInterval(id)
@@ -69,12 +68,13 @@ export function useAvisos() {
     if (!entregas) return
     const anterior = previas.current?.fecha === hoy ? previas.current.mapa : null
     if (anterior) {
-      for (const e of entregas) {
-        if (esCambioPropio(e.id)) continue
+      // La lista viene en orden de llegada: su posición es el número de orden del pedido
+      entregas.forEach((e, i) => {
+        if (esCambioPropio(e.id)) return
         const antes = anterior.get(e.id)
-        const aviso = antes ? avisoCambio(antes, e) : avisoNueva(e)
+        const aviso = antes ? avisoCambio(antes, e, i + 1) : avisoNueva(e)
         if (aviso) avisar(aviso)
-      }
+      })
     }
     previas.current = { fecha: hoy, mapa: new Map(entregas.map((e) => [e.id, e])) }
   }, [entregas, hoy])
@@ -90,7 +90,7 @@ export function useAvisos() {
       // Tampoco al deshacer una entrega (de "entregada" a pendiente).
       const subio = antes && antes !== 'entregada' && GRAVEDAD[nivel] > GRAVEDAD[antes]
       if (subio && (nivel === 'advertencia' || nivel === 'urgente')) {
-        avisar(avisoUrgencia(e, nivel))
+        avisar(avisoUrgencia(e, nivel, minutosRestantes(e, ahora)))
       }
       niveles.current.set(e.id, nivel)
     }

@@ -3,7 +3,7 @@ import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import { entregas } from '../db/schema.js'
-import { avisoCambio, avisoNueva, notificar } from '../lib/notificaciones.js'
+import { avisoCambio, avisoNueva, notificar, numeroDelDia } from '../lib/notificaciones.js'
 import { parseBody } from '../lib/validate.js'
 import { requireRole } from '../middleware/auth.js'
 import type { AppEnv } from '../types.js'
@@ -43,7 +43,7 @@ const idParam = (raw: string) => {
 }
 
 export const entregaRoutes = new Hono<AppEnv>()
-  // Entregas de un día, ordenadas por hora
+  // Entregas de un día, en el orden en que se registraron (el id crece con cada pedido nuevo)
   .get('/', async (c) => {
     const fecha = fechaSchema.safeParse(c.req.query('fecha'))
     if (!fecha.success) throw new HTTPException(400, { message: 'Parámetro fecha requerido (AAAA-MM-DD)' })
@@ -51,7 +51,7 @@ export const entregaRoutes = new Hono<AppEnv>()
       .select()
       .from(entregas)
       .where(eq(entregas.fecha, fecha.data))
-      .orderBy(asc(entregas.hora), asc(entregas.id))
+      .orderBy(asc(entregas.id))
     return c.json(rows)
   })
 
@@ -86,7 +86,7 @@ export const entregaRoutes = new Hono<AppEnv>()
       .insert(entregas)
       .values({ ...data, creadoPor: c.var.user.sub })
       .returning()
-    await notificar(c.var.db, avisoNueva(row!), c.var.user.sub)
+    await notificar(c.var.db, avisoNueva(row!), { excepto: c.var.user.sub })
     return c.json(row, 201)
   })
 
@@ -106,8 +106,8 @@ export const entregaRoutes = new Hono<AppEnv>()
     if (!row) {
       throw new HTTPException(409, { message: 'La entrega ya fue entregada. Deshaz la entrega para poder editarla.' })
     }
-    const aviso = avisoCambio(antes, row)
-    if (aviso) await notificar(c.var.db, aviso, c.var.user.sub)
+    const aviso = avisoCambio(antes, row, await numeroDelDia(c.var.db, row))
+    if (aviso) await notificar(c.var.db, aviso, { excepto: c.var.user.sub })
     return c.json(row)
   })
 
