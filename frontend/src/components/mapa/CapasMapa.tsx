@@ -1,8 +1,6 @@
-import { LayerGroup, LayersControl, TileLayer } from 'react-leaflet'
-import { CapaLugares } from './CapaLugares'
+import { LayersControl, TileLayer } from 'react-leaflet'
 
-// Calles (OpenStreetMap) y satélite (Esri): en pueblos pequeños el satélite ayuda a ubicar casas.
-// Encima, los negocios y lugares conocidos (Overture Maps), que se pueden ocultar desde el mismo control.
+// Calles (OpenStreetMap) y satélite (Esri): en pueblos pequeños el satélite ayuda a ubicar casas
 export function CapasMapa() {
   return (
     <LayersControl position="topright">
@@ -20,11 +18,6 @@ export function CapasMapa() {
           maxZoom={19}
         />
       </LayersControl.BaseLayer>
-      <LayersControl.Overlay checked name="Lugares conocidos">
-        <LayerGroup attribution='Lugares &copy; <a href="https://overturemaps.org">Overture Maps</a>'>
-          <CapaLugares />
-        </LayerGroup>
-      </LayersControl.Overlay>
     </LayersControl>
   )
 }
