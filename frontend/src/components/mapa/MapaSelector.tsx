@@ -54,6 +54,8 @@ export function MapaSelector({ valor, onCambio }: Props) {
         center={valor ? [valor.lat, valor.lng] : CENTRO_PUEBLO}
         zoom={valor ? 17 : ZOOM_PUEBLO}
         alto="h-72 sm:h-80"
+        // Elegir un lugar en el buscador pone ahí el punto de entrega (luego se puede arrastrar)
+        onElegirLugar={(l) => onCambio({ lat: redondear(l.lat), lng: redondear(l.lng) })}
       >
         <ClickEnMapa onCambio={onCambio} />
         {valor && (

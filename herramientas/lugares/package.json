@@ -1,0 +1,12 @@
+{
+  "name": "herramienta-lugares",
+  "private": true,
+  "type": "module",
+  "description": "Descarga los lugares conocidos de Chiquimulilla (Overture Maps) para el mapa de la app",
+  "scripts": {
+    "generar": "node generar.mjs"
+  },
+  "dependencies": {
+    "@duckdb/node-api": "^1.4.1-r.4"
+  }
+}
