@@ -54,18 +54,6 @@ cp .env.example .env    # VITE_API_URL=http://localhost:8787
 npm run dev             # http://localhost:5173
 ```
 
-### Lugares conocidos del mapa
-
-Los negocios, iglesias, escuelas, etc. que aparecen en el mapa están en `frontend/public/lugares.json`.
-Salen de los datos abiertos y gratuitos de [Overture Maps](https://overturemaps.org) (licencia CDLA Permissive 2.0).
-Para actualizarlos (por ejemplo, cada pocos meses):
-
-```bash
-cd herramientas/lugares
-npm install
-npm run generar
-```
-
 ## Despliegue
 
 ### Backend → Google Cloud Run

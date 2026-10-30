@@ -1,8 +1,6 @@
 import L, { type Map as LeafletMap } from 'leaflet'
 import { type ReactNode, type Ref, useEffect, useRef, useState } from 'react'
 import { MapContainer, useMap } from 'react-leaflet'
-import type { Lugar } from '../../lib/lugares'
-import { BuscadorLugares } from './BuscadorLugares'
 import { CapasMapa } from './CapasMapa'
 
 interface Props {
@@ -14,8 +12,6 @@ interface Props {
   /** Botones extra que se muestran junto al de pantalla completa (ya dentro del mapa) */
   botones?: ReactNode
   mapRef?: Ref<LeafletMap>
-  /** Al elegir un lugar en el buscador (ej. para poner ahí el punto de entrega) */
-  onElegirLugar?: (l: Lugar) => void
 }
 
 // Leaflet necesita recalcular su tamaño cuando cambia el contenedor
@@ -46,7 +42,7 @@ function BarraBotones({ children }: { children: ReactNode }) {
 export const claseBotonMapa =
   'flex h-10 items-center gap-1.5 rounded-lg border-2 border-black/20 bg-white px-3 text-sm font-semibold text-stone-800 shadow-sm active:bg-stone-100'
 
-export function MarcoMapa({ center, zoom, alto, children, botones, mapRef, onElegirLugar }: Props) {
+export function MarcoMapa({ center, zoom, alto, children, botones, mapRef }: Props) {
   const [completa, setCompleta] = useState(false)
   const pidioPantallaNativa = useRef(false)
 
@@ -99,7 +95,6 @@ export function MarcoMapa({ center, zoom, alto, children, botones, mapRef, onEle
       <MapContainer ref={mapRef} center={center} zoom={zoom} className="h-full w-full">
         <CapasMapa />
         <AjustarTamano clave={completa} />
-        <BuscadorLugares onElegir={onElegirLugar} />
         {children}
         <BarraBotones>
           {botones}
