@@ -6,8 +6,10 @@ import { config } from './config.js'
 import { db } from './db/client.js'
 import { requireAuth } from './middleware/auth.js'
 import { authRoutes } from './routes/auth.js'
+import { avisoRoutes } from './routes/avisos.js'
 import { configuracionRoutes } from './routes/configuracion.js'
 import { entregaRoutes } from './routes/entregas.js'
+import { pushRoutes } from './routes/push.js'
 import { ubicacionRoutes } from './routes/ubicacion.js'
 import { usuarioRoutes } from './routes/usuarios.js'
 import type { AppEnv } from './types.js'
@@ -38,10 +40,13 @@ app.use('/api/entregas/*', requireAuth)
 app.use('/api/usuarios/*', requireAuth)
 app.use('/api/configuracion/*', requireAuth)
 app.use('/api/ubicacion/*', requireAuth)
+app.use('/api/push/*', requireAuth)
 app.route('/api/entregas', entregaRoutes)
 app.route('/api/usuarios', usuarioRoutes)
 app.route('/api/configuracion', configuracionRoutes)
 app.route('/api/ubicacion', ubicacionRoutes)
+app.route('/api/push', pushRoutes)
+app.route('/api/avisos', avisoRoutes)
 
 app.notFound((c) => c.json({ message: 'Ruta no encontrada' }, 404))
 

@@ -40,8 +40,11 @@ api.interceptors.response.use(
       const token = await refreshEnCurso
       original.headers.Authorization = `Bearer ${token}`
       return api(original)
-    } catch {
-      useAuth.getState().cerrarSesion()
+    } catch (err) {
+      // Solo se cierra la sesión si el servidor la rechaza (vencida o usuario desactivado).
+      // Sin internet o con el servidor caído se conserva y se reintenta en la siguiente petición.
+      const rechazada = !axios.isAxiosError(err) || [400, 401, 403].includes(err.response?.status ?? 0)
+      if (rechazada) useAuth.getState().cerrarSesion()
       return Promise.reject(error)
     }
   },

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
+import { marcarCambioPropio } from '../lib/avisos'
 import type { Configuracion, Entrega, EntregaInput, EstadoPago, ResumenDia } from '../types'
 
 export const claves = {
@@ -42,7 +43,10 @@ export function useGuardarEntrega() {
       id
         ? (await api.put<Entrega>(`/entregas/${id}`, datos)).data
         : (await api.post<Entrega>('/entregas', datos)).data,
-    onSuccess: () => qc.invalidateQueries({ queryKey: claves.entregas }),
+    onSuccess: (entrega) => {
+      marcarCambioPropio(entrega.id)
+      return qc.invalidateQueries({ queryKey: claves.entregas })
+    },
   })
 }
 

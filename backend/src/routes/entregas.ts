@@ -3,6 +3,7 @@ import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import { entregas } from '../db/schema.js'
+import { avisoCambio, avisoNueva, notificar } from '../lib/notificaciones.js'
 import { parseBody } from '../lib/validate.js'
 import { requireRole } from '../middleware/auth.js'
 import type { AppEnv } from '../types.js'
@@ -85,23 +86,28 @@ export const entregaRoutes = new Hono<AppEnv>()
       .insert(entregas)
       .values({ ...data, creadoPor: c.var.user.sub })
       .returning()
+    await notificar(c.var.db, avisoNueva(row!), c.var.user.sub)
     return c.json(row, 201)
   })
 
   .put('/:id', requireRole('admin'), async (c) => {
     const id = idParam(c.req.param('id'))
     const data = await parseBody(c, entregaSchema)
+    const antes = await c.var.db.query.entregas.findFirst({ where: eq(entregas.id, id) })
+    if (!antes) throw new HTTPException(404, { message: 'Entrega no encontrada' })
+    // Con otra hora se vuelven a avisar la advertencia y el atraso
+    const cambioHora = antes.fecha !== data.fecha || antes.hora !== data.hora
     // Una entrega ya entregada no se edita: primero hay que deshacer la entrega
     const [row] = await c.var.db
       .update(entregas)
-      .set({ ...data, actualizadoEn: new Date() })
+      .set({ ...data, actualizadoEn: new Date(), ...(cambioHora && { avisoEnviado: null }) })
       .where(and(eq(entregas.id, id), eq(entregas.entregado, false)))
       .returning()
     if (!row) {
-      const existe = await c.var.db.query.entregas.findFirst({ where: eq(entregas.id, id), columns: { id: true } })
-      if (!existe) throw new HTTPException(404, { message: 'Entrega no encontrada' })
       throw new HTTPException(409, { message: 'La entrega ya fue entregada. Deshaz la entrega para poder editarla.' })
     }
+    const aviso = avisoCambio(antes, row)
+    if (aviso) await notificar(c.var.db, aviso, c.var.user.sub)
     return c.json(row)
   })
 

@@ -2,8 +2,7 @@ import L from 'leaflet'
 import { useEffect } from 'react'
 import { Marker, Popup, useMap } from 'react-leaflet'
 import { hora12, urgenciaDe } from '../../lib/fechas'
-import { CENTRO_PUEBLO, COLOR_URGENCIA, ZOOM_PUEBLO, enlaceComoLlegar, iconoPin } from '../../lib/mapa'
-import { useEsAdmin } from '../../store/auth'
+import { CENTRO_PUEBLO, COLOR_URGENCIA, ZOOM_PUEBLO, enlaceWhatsApp, iconoPin } from '../../lib/mapa'
 import type { Entrega } from '../../types'
 import { BotonUbicacion, CapaUbicaciones } from './CapaUbicaciones'
 import { MarcoMapa } from './MarcoMapa'
@@ -29,7 +28,6 @@ function AjustarVista({ puntos }: { puntos: [number, number][] }) {
 export function MapaEntregas({ entregas, numeros, ahora, minutosAdvertencia }: Props) {
   const conPunto = entregas.filter((e) => e.lat != null && e.lng != null)
   const sinPunto = entregas.length - conPunto.length
-  const esAdmin = useEsAdmin()
 
   return (
     <div className="space-y-2">
@@ -43,15 +41,24 @@ export function MapaEntregas({ entregas, numeros, ahora, minutosAdvertencia }: P
             icon={iconoPin(COLOR_URGENCIA[urgenciaDe(e, ahora, minutosAdvertencia)], numeros[entregas.indexOf(e)])}
           >
             <Popup>
-              <div className="space-y-1 text-sm">
+              <div className="space-y-1.5 text-sm">
                 <p className="font-semibold">
                   #{numeros[entregas.indexOf(e)]} · {e.nombre}
                 </p>
                 <p>{hora12(e.hora)}</p>
                 <p>{e.direccion}</p>
-                <a href={enlaceComoLlegar(e)} target="_blank" rel="noreferrer">
-                  Cómo llegar →
-                </a>
+                <div className="font-medium">
+                  {e.enteros > 0 && <p>{e.enteros} {e.enteros === 1 ? 'entero' : 'enteros'}</p>}
+                  {e.medios > 0 && <p>{e.medios} {e.medios === 1 ? 'medio' : 'medios'}</p>}
+                </div>
+                <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <a href={`tel:${e.telefono}`} className="font-semibold">
+                    📞 {e.telefono}
+                  </a>
+                  <a href={enlaceWhatsApp(e.telefono)} target="_blank" rel="noreferrer" style={{ color: '#047857' }}>
+                    WhatsApp
+                  </a>
+                </p>
               </div>
             </Popup>
           </Marker>
@@ -62,7 +69,7 @@ export function MapaEntregas({ entregas, numeros, ahora, minutosAdvertencia }: P
         <Leyenda color={COLOR_URGENCIA.advertencia} texto="Por llegar la hora" />
         <Leyenda color={COLOR_URGENCIA.normal} texto="A tiempo" />
         <Leyenda color={COLOR_URGENCIA.entregada} texto="Entregada" />
-        {esAdmin ? <Leyenda color="#2563eb" texto="Repartidor" /> : <Leyenda color="#2563eb" texto="Tú" />}
+        <Leyenda color="#2563eb" texto="Tú y el equipo" />
         {sinPunto > 0 && <span className="text-amber-700">{sinPunto} sin punto en el mapa</span>}
       </div>
     </div>

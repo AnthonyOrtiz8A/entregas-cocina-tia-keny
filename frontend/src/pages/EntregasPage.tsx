@@ -73,7 +73,7 @@ export function EntregasPage() {
         <Dato titulo="Por cobrar" valor={quetzales(resumen.porCobrar)} />
       </section>
 
-      {esAdmin && <PanelRepartidores onVerMapa={() => cambiarParam('vista', 'mapa')} />}
+      <PanelRepartidores onVerMapa={() => cambiarParam('vista', 'mapa')} />
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex rounded-lg bg-stone-200 p-1">

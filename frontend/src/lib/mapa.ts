@@ -1,5 +1,5 @@
 import L from 'leaflet'
-import type { Entrega } from '../types'
+import type { Entrega, Rol } from '../types'
 import type { Urgencia } from './fechas'
 
 // Centro de Chiquimulilla, Santa Rosa
@@ -53,12 +53,12 @@ export const iconoYo = L.divIcon({
 const escaparHtml = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 
-// Repartidor visto por el administrador: círculo con moto y su nombre debajo
-export function iconoRepartidor(nombre: string, viejo: boolean) {
+// Otra persona del equipo: círculo con moto (repartidor) o persona (administrador) y su nombre debajo
+export function iconoCompanero(nombre: string, rol: Rol, viejo: boolean) {
   const color = viejo ? '#78716c' : '#2563eb'
   return L.divIcon({
     className: 'pin',
-    html: `<div class="repartidor${viejo ? ' viejo' : ''}" style="--color:${color}"><span class="icono">🛵</span><span class="nombre">${escaparHtml(nombre.split(' ')[0] ?? nombre)}</span></div>`,
+    html: `<div class="repartidor${viejo ? ' viejo' : ''}" style="--color:${color}"><span class="icono">${rol === 'admin' ? '👤' : '🛵'}</span><span class="nombre">${escaparHtml(nombre.split(' ')[0] ?? nombre)}</span></div>`,
     iconSize: [36, 36],
     iconAnchor: [18, 18],
     popupAnchor: [0, -18],

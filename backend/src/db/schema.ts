@@ -39,6 +39,8 @@ export const entregas = pgTable('entregas', {
   entregado: boolean('entregado').notNull().default(false),
   entregadoEn: timestamp('entregado_en', { withTimezone: true }),
   notas: text('notas'),
+  // Último aviso de urgencia enviado ('advertencia' | 'urgente'); se reinicia al cambiar la hora
+  avisoEnviado: text('aviso_enviado', { enum: ['advertencia', 'urgente'] }),
   creadoPor: integer('creado_por').references(() => usuarios.id, { onDelete: 'set null' }),
   creadoEn: timestamp('creado_en', { withTimezone: true }).notNull().defaultNow(),
   actualizadoEn: timestamp('actualizado_en', { withTimezone: true }).notNull().defaultNow(),
@@ -64,4 +66,16 @@ export const ubicaciones = pgTable('ubicaciones', {
   lng: doublePrecision('lng').notNull(),
   precision: doublePrecision('precision'),
   actualizadoEn: timestamp('actualizado_en', { withTimezone: true }).notNull().defaultNow(),
+})
+
+// Teléfonos/navegadores que aceptaron recibir notificaciones (Web Push)
+export const suscripciones = pgTable('suscripciones', {
+  id: serial('id').primaryKey(),
+  usuarioId: integer('usuario_id')
+    .notNull()
+    .references(() => usuarios.id, { onDelete: 'cascade' }),
+  endpoint: text('endpoint').notNull().unique(),
+  p256dh: text('p256dh').notNull(),
+  auth: text('auth').notNull(),
+  creadoEn: timestamp('creado_en', { withTimezone: true }).notNull().defaultNow(),
 })

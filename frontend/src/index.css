@@ -116,3 +116,8 @@
     animation: none;
   }
 }
+
+/* Leaflet separa mucho los párrafos de los globos del mapa */
+.leaflet-popup-content p {
+  margin: 0;
+}

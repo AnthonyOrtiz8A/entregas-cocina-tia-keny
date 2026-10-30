@@ -1,12 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 import { api } from '../lib/api'
-import { useAuth, useEsAdmin } from '../store/auth'
+import { useAuth } from '../store/auth'
 import { useUbicacion } from '../store/ubicacion'
+import type { Rol } from '../types'
 
-export interface UbicacionRepartidor {
+export interface UbicacionUsuario {
   usuarioId: number
   nombre: string
+  rol: Rol
   lat: number
   lng: number
   precision: number | null
@@ -26,14 +28,14 @@ function distanciaMetros(a: { lat: number; lng: number }, b: { lat: number; lng:
 }
 
 /**
- * Para repartidores: sigue la ubicación del teléfono mientras la app está abierta,
- * la muestra en sus mapas y la envía al servidor para que el administrador la vea.
+ * Sigue la ubicación del teléfono mientras la app está abierta,
+ * la muestra en sus mapas y la envía al servidor para que los demás la vean.
  */
 export function useSeguimientoUbicacion() {
-  const esRepartidor = useAuth((s) => s.usuario?.rol === 'repartidor')
+  const conSesion = useAuth((s) => !!s.usuario)
   const { compartir, setMiUbicacion, setError } = useUbicacion()
   const ultimoEnvio = useRef<{ lat: number; lng: number; fecha: number } | null>(null)
-  const activo = esRepartidor && compartir
+  const activo = conSesion && compartir
 
   useEffect(() => {
     if (!activo) return
@@ -86,21 +88,22 @@ export function useSeguimientoUbicacion() {
   // Al apagar el interruptor se borra su ubicación del servidor
   const estabaActivo = useRef(activo)
   useEffect(() => {
-    if (estabaActivo.current && !activo && esRepartidor) {
+    if (estabaActivo.current && !activo && conSesion) {
       ultimoEnvio.current = null
       api.delete('/ubicacion').catch(() => {})
     }
     estabaActivo.current = activo
-  }, [activo, esRepartidor])
+  }, [activo, conSesion])
 }
 
-/** Para administradores: última ubicación de cada repartidor */
-export function useUbicacionesRepartidores() {
-  const esAdmin = useEsAdmin()
+/** Última ubicación de los demás usuarios que comparten la suya (sin incluirse a uno mismo) */
+export function useUbicacionesEquipo() {
+  const miId = useAuth((s) => s.usuario?.id)
   return useQuery({
-    queryKey: ['ubicaciones', 'repartidores'],
-    queryFn: async () => (await api.get<UbicacionRepartidor[]>('/ubicacion/repartidores')).data,
-    enabled: esAdmin,
+    queryKey: ['ubicaciones', miId],
+    queryFn: async () => (await api.get<UbicacionUsuario[]>('/ubicacion')).data,
+    select: (lista) => lista.filter((u) => u.usuarioId !== miId),
+    enabled: !!miId,
     refetchInterval: 15_000,
   })
 }
