@@ -29,7 +29,8 @@ export const entregas = pgTable('entregas', {
   lng: doublePrecision('lng'),
   // Fecha y hora locales (Guatemala) en que se debe entregar
   fecha: date('fecha', { mode: 'string' }).notNull(),
-  hora: text('hora').notNull(),
+  // Opcional: null = sin hora definida (no se marca urgente ni se avisa por hora)
+  hora: text('hora'),
   enteros: integer('enteros').notNull().default(0),
   medios: integer('medios').notNull().default(0),
   extras: text('extras'),

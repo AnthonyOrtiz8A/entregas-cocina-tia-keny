@@ -18,7 +18,11 @@ const entregaSchema = z
     lat: z.number().min(-90).max(90).nullable().default(null),
     lng: z.number().min(-180).max(180).nullable().default(null),
     fecha: fechaSchema,
-    hora: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Hora inválida (HH:MM)'),
+    hora: z
+      .string()
+      .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Hora inválida (HH:MM)')
+      .nullable()
+      .default(null),
     enteros: z.number().int().min(0),
     medios: z.number().int().min(0),
     extras: z.string().trim().max(500).nullable().default(null),

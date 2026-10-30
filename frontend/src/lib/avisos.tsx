@@ -27,6 +27,10 @@ export function fiambres(e: Pick<Entrega, 'enteros' | 'medios'>) {
 const diaTexto = (fecha: string) => (fecha === hoyISO() ? 'hoy' : fechaLarga(fecha))
 const urlDia = (fecha: string) => `/entregas?fecha=${fecha}`
 
+/** "hoy a las 4:30 p. m." o "hoy, sin hora" */
+const cuandoTexto = (fecha: string, hora: string | null) =>
+  hora ? `${diaTexto(fecha)} a las ${hora12(hora)}` : `${diaTexto(fecha)}, sin hora`
+
 /** "las 4 y 30 de la tarde", "la 1 de la tarde", "las 12 del mediodía" */
 export function horaHablada(hora: string) {
   const [h = 0, m = 0] = hora.split(':').map(Number)
@@ -36,8 +40,12 @@ export function horaHablada(hora: string) {
   return `${h12 === 1 ? 'la' : 'las'} ${h12}${m ? ` y ${m}` : ''} ${periodo}`
 }
 
-const cuandoHablado = (fecha: string, hora: string) =>
-  fecha === hoyISO() ? horaHablada(hora) : `el ${fechaLarga(fecha).replace(',', '')} a ${horaHablada(hora)}`
+/** "las 4 y 30 de la tarde" (hoy), "el domingo 1 de noviembre a las…", o "hoy, sin hora definida" */
+function cuandoHablado(fecha: string, hora: string | null) {
+  const dia = fecha === hoyISO() ? null : `el ${fechaLarga(fecha).replace(',', '')}`
+  if (!hora) return `${dia ?? 'hoy'}, sin hora definida`
+  return dia ? `${dia} a ${horaHablada(hora)}` : horaHablada(hora)
+}
 
 const minutosHablados = (min: number) => {
   const n = Math.max(1, Math.round(min))
@@ -47,7 +55,7 @@ const minutosHablados = (min: number) => {
 export const avisoNueva = (e: Entrega): Aviso => ({
   id: `nueva-${e.id}`,
   titulo: `Nueva entrega · ${e.nombre}`,
-  cuerpo: `${diaTexto(e.fecha)} a las ${hora12(e.hora)} · ${fiambres(e)}\n${e.direccion}`,
+  cuerpo: `${cuandoTexto(e.fecha, e.hora)} · ${fiambres(e)}\n${e.direccion}`,
   url: urlDia(e.fecha),
   voz: `Nueva entrega registrada para ${cuandoHablado(e.fecha, e.hora)}, para la dirección ${e.direccion}`,
 })
@@ -58,7 +66,7 @@ export function avisoCambio(antes: Entrega, despues: Entrega, numero: number): A
   const cambioLugar = antes.direccion !== despues.direccion || antes.lat !== despues.lat || antes.lng !== despues.lng
   if (!cambioHora && !cambioLugar) return null
   const partes = []
-  if (cambioHora) partes.push(`ahora ${diaTexto(despues.fecha)} a las ${hora12(despues.hora)}`)
+  if (cambioHora) partes.push(`ahora ${cuandoTexto(despues.fecha, despues.hora)}`)
   if (cambioLugar) partes.push(`nueva dirección: ${despues.direccion}`)
   const tipo = cambioHora && cambioLugar ? 'Cambio de hora y lugar' : cambioHora ? 'Cambio de hora' : 'Cambio de lugar'
   const nuevoHorario = cuandoHablado(despues.fecha, despues.hora)

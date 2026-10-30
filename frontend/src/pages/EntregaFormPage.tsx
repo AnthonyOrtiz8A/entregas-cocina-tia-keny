@@ -22,7 +22,8 @@ const schema = z
     direccion: z.string().trim().min(3, 'Escribe la dirección'),
     punto: z.object({ lat: z.number(), lng: z.number() }).nullable(),
     fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Elige la fecha'),
-    hora: z.string().regex(/^\d{2}:\d{2}$/, 'Elige la hora'),
+    // Opcional: vacío = sin hora definida
+    hora: z.union([z.literal(''), z.string().regex(/^\d{2}:\d{2}$/, 'Hora inválida')]),
     enteros: numero().int(),
     medios: numero().int(),
     extras: z.string().trim().max(500),
@@ -112,6 +113,7 @@ function FormularioEntrega({ entrega }: { entrega?: Entrega }) {
       ? {
           ...entrega,
           punto: entrega.lat != null && entrega.lng != null ? { lat: entrega.lat, lng: entrega.lng } : null,
+          hora: entrega.hora ?? '',
           extras: entrega.extras ?? '',
           notas: entrega.notas ?? '',
         }
@@ -143,12 +145,13 @@ function FormularioEntrega({ entrega }: { entrega?: Entrega }) {
     if (totalAutomatico) setValue('total', Math.round(sugerido * 100) / 100)
   }, [sugerido, totalAutomatico, setValue])
 
-  const onSubmit = handleSubmit(({ punto, extras, notas, ...resto }) => {
+  const onSubmit = handleSubmit(({ punto, hora, extras, notas, ...resto }) => {
     guardar.mutate(
       {
         id: entrega?.id,
         datos: {
           ...resto,
+          hora: hora || null,
           lat: punto?.lat ?? null,
           lng: punto?.lng ?? null,
           extras: extras || null,
@@ -190,7 +193,7 @@ function FormularioEntrega({ entrega }: { entrega?: Entrega }) {
           <Campo label="Día" error={errors.fecha?.message}>
             <input className="input" type="date" {...register('fecha')} />
           </Campo>
-          <Campo label="Hora" error={errors.hora?.message}>
+          <Campo label="Hora (opcional)" error={errors.hora?.message}>
             <input className="input" type="time" {...register('hora')} />
           </Campo>
         </div>
