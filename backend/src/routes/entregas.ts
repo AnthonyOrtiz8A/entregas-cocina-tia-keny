@@ -43,7 +43,7 @@ const idParam = (raw: string) => {
 }
 
 export const entregaRoutes = new Hono<AppEnv>()
-  // Entregas de un día, ordenadas por hora
+  // Entregas de un día, en el orden en que se registraron (el id crece con cada pedido nuevo)
   .get('/', async (c) => {
     const fecha = fechaSchema.safeParse(c.req.query('fecha'))
     if (!fecha.success) throw new HTTPException(400, { message: 'Parámetro fecha requerido (AAAA-MM-DD)' })
@@ -51,7 +51,7 @@ export const entregaRoutes = new Hono<AppEnv>()
       .select()
       .from(entregas)
       .where(eq(entregas.fecha, fecha.data))
-      .orderBy(asc(entregas.hora), asc(entregas.id))
+      .orderBy(asc(entregas.id))
     return c.json(rows)
   })
 
