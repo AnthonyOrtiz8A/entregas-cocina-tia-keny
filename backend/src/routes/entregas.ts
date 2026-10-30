@@ -3,7 +3,7 @@ import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import { entregas } from '../db/schema.js'
-import { avisoCambio, avisoNueva, notificar } from '../lib/notificaciones.js'
+import { avisoCambio, avisoNueva, notificar, numeroDelDia } from '../lib/notificaciones.js'
 import { parseBody } from '../lib/validate.js'
 import { requireRole } from '../middleware/auth.js'
 import type { AppEnv } from '../types.js'
@@ -106,7 +106,7 @@ export const entregaRoutes = new Hono<AppEnv>()
     if (!row) {
       throw new HTTPException(409, { message: 'La entrega ya fue entregada. Deshaz la entrega para poder editarla.' })
     }
-    const aviso = avisoCambio(antes, row)
+    const aviso = avisoCambio(antes, row, await numeroDelDia(c.var.db, row))
     if (aviso) await notificar(c.var.db, aviso, { excepto: c.var.user.sub })
     return c.json(row)
   })

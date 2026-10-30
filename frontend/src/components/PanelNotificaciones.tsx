@@ -8,6 +8,8 @@ import {
   probarNotificaciones,
   pushSoportado,
 } from '../lib/avisos'
+import { hablar, vozSoportada } from '../lib/voz'
+import { usePreferencias } from '../store/preferencias'
 
 const permisoActual = () => (notificacionesSoportadas() ? Notification.permission : null)
 
@@ -105,7 +107,36 @@ export function PanelNotificaciones({ onCerrar }: { onCerrar: () => void }) {
         {resultado && (
           <p className={resultado.tipo === 'ok' ? 'text-emerald-700' : 'text-red-700'}>{resultado.texto}</p>
         )}
+
+        <OpcionVoz />
       </div>
+    </div>
+  )
+}
+
+function OpcionVoz() {
+  const { voz, setVoz } = usePreferencias()
+  if (!vozSoportada()) return null
+  return (
+    <div className="space-y-1.5 border-t border-stone-200 pt-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="flex items-center gap-2 font-medium">
+          <input type="checkbox" className="size-4 accent-marca-700" checked={voz} onChange={(e) => setVoz(e.target.checked)} />
+          🔊 Leer los avisos en voz alta
+        </label>
+        {voz && (
+          <button
+            className="btn-secundario py-1"
+            onClick={() => hablar('Nueva entrega registrada para las 4 y 30 de la tarde, para la dirección Barrio El Centro')}
+          >
+            Probar voz
+          </button>
+        )}
+      </div>
+      <p className="text-xs text-stone-500">
+        Solo funciona con la app abierta (puede estar minimizada). Después de abrirla, toca la pantalla una vez para que el
+        navegador permita la voz.
+      </p>
     </div>
   )
 }

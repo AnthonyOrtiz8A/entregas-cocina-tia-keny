@@ -32,7 +32,7 @@ export const pushRoutes = new Hono<AppEnv>()
     if (!pushActivo()) return c.json({ configurado: false, telefonos: 0, enviados: 0, errores: [] })
     const resultado = await notificar(
       c.var.db,
-      { id: `prueba-${Date.now()}`, titulo: '🔔 Prueba de notificación', cuerpo: 'Si ves esto, las notificaciones funcionan en este teléfono.' },
+      { id: `prueba-${Date.now()}`, titulo: '🔔 Prueba de notificación', cuerpo: 'Si ves esto, las notificaciones funcionan en este teléfono.', voz: 'Prueba de notificación. Así se escucharán los avisos de entregas' },
       { soloUsuario: c.var.user.sub },
     )
     return c.json({ configurado: true, ...resultado })
