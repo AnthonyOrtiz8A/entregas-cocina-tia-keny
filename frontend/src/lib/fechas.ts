@@ -25,7 +25,8 @@ export const fechaLarga = (fecha: string) =>
 export const fechaCorta = (fecha: string) =>
   new Date(`${fecha}T12:00:00`).toLocaleDateString('es-GT', { weekday: 'short', day: 'numeric', month: 'short' })
 
-export function hora12(hora: string) {
+export function hora12(hora: string | null) {
+  if (!hora) return 'Sin hora'
   const [h = 0, m = 0] = hora.split(':').map(Number)
   const sufijo = h >= 12 ? 'p. m.' : 'a. m.'
   return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${sufijo}`
@@ -33,13 +34,17 @@ export function hora12(hora: string) {
 
 export type Urgencia = 'urgente' | 'advertencia' | 'normal' | 'entregada'
 
+/** Minutos que faltan para la hora de entrega (negativo si ya pasó); null si no tiene hora */
 export function minutosRestantes(e: Pick<Entrega, 'fecha' | 'hora'>, ahora: number) {
+  if (!e.hora) return null
   return Math.round((new Date(`${e.fecha}T${e.hora}:00`).getTime() - ahora) / 60_000)
 }
 
+// Sin hora definida no hay urgencia: siempre "normal" hasta que se entregue
 export function urgenciaDe(e: Entrega, ahora: number, minutosAdvertencia: number): Urgencia {
   if (e.entregado) return 'entregada'
   const min = minutosRestantes(e, ahora)
+  if (min === null) return 'normal'
   if (min < 0) return 'urgente'
   if (min <= minutosAdvertencia) return 'advertencia'
   return 'normal'

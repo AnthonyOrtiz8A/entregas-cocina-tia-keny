@@ -17,7 +17,7 @@ export interface Entrega {
   lat: number | null
   lng: number | null
   fecha: string // AAAA-MM-DD
-  hora: string // HH:MM
+  hora: string | null // HH:MM, o null si no tiene hora definida
   enteros: number
   medios: number
   extras: string | null

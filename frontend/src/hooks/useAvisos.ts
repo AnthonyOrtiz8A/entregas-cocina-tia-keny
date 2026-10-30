@@ -90,7 +90,7 @@ export function useAvisos() {
       // Tampoco al deshacer una entrega (de "entregada" a pendiente).
       const subio = antes && antes !== 'entregada' && GRAVEDAD[nivel] > GRAVEDAD[antes]
       if (subio && (nivel === 'advertencia' || nivel === 'urgente')) {
-        avisar(avisoUrgencia(e, nivel, minutosRestantes(e, ahora)))
+        avisar(avisoUrgencia(e, nivel, minutosRestantes(e, ahora) ?? 0))
       }
       niveles.current.set(e.id, nivel)
     }

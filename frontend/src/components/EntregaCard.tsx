@@ -63,12 +63,12 @@ export function EntregaCard({ entrega: e, numero, urgencia, ahora }: Props) {
           <div className="min-w-0 flex-1">
             <h3 className="truncate text-lg font-bold leading-tight">{e.nombre}</h3>
             <p className="text-sm text-stone-600">
-              <span className="font-semibold text-stone-900">{hora12(e.hora)}</span>
-              {!e.entregado && <> · {describirTiempo(minutosRestantes(e, ahora))}</>}
+              <span className={e.hora ? 'font-semibold text-stone-900' : 'italic'}>{hora12(e.hora)}</span>
+              {!e.entregado && e.hora && <> · {describirTiempo(minutosRestantes(e, ahora)!)}</>}
             </p>
           </div>
           <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ${estilo.insignia}`}>
-            {estilo.titulo}
+            {!e.hora && urgencia === 'normal' ? 'Sin hora' : estilo.titulo}
           </span>
         </header>
 

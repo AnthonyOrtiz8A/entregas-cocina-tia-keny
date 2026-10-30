@@ -1,4 +1,4 @@
-import { and, count, eq, inArray, isNull, lte, ne, or, type Column } from 'drizzle-orm'
+import { and, count, eq, inArray, isNotNull, isNull, lte, ne, or, type Column } from 'drizzle-orm'
 import webpush from 'web-push'
 import { config } from '../config.js'
 import type { Db } from '../db/client.js'
@@ -89,7 +89,7 @@ export function fiambres(e: Pick<Entrega, 'enteros' | 'medios'>) {
 // Guatemala no tiene horario de verano: siempre UTC-6
 const ZONA = '-06:00'
 export const hoyGuatemala = () => new Date(Date.now() - 6 * 3_600_000).toISOString().slice(0, 10)
-const minutosPara = (e: Pick<Entrega, 'fecha' | 'hora'>) =>
+const minutosPara = (e: { fecha: string; hora: string }) =>
   (new Date(`${e.fecha}T${e.hora}:00${ZONA}`).getTime() - Date.now()) / 60_000
 
 const diaTexto = (fecha: string) =>
@@ -98,11 +98,15 @@ const diaTexto = (fecha: string) =>
     : new Date(`${fecha}T12:00:00${ZONA}`).toLocaleDateString('es-GT', {
         weekday: 'long',
         day: 'numeric',
-        month: 'short',
+        month: 'long',
         timeZone: 'America/Guatemala',
       })
 
 const urlDia = (fecha: string) => `/entregas?fecha=${fecha}`
+
+/** "hoy a las 4:30 p. m." o "hoy, sin hora" */
+const cuandoTexto = (fecha: string, hora: string | null) =>
+  hora ? `${diaTexto(fecha)} a las ${hora12(hora)}` : `${diaTexto(fecha)}, sin hora`
 
 // --- Voz (mismas frases que arma la app) ---
 
@@ -114,16 +118,20 @@ export function horaHablada(hora: string) {
   return `${h12 === 1 ? 'la' : 'las'} ${h12}${m ? ` y ${m}` : ''} ${periodo}`
 }
 
-/** "las 4 y 30 de la tarde" si es hoy; "el domingo 1 de noviembre a las 4 y 30 de la tarde" si es otro día */
-const cuandoHablado = (fecha: string, hora: string) =>
-  fecha === hoyGuatemala()
-    ? horaHablada(hora)
-    : `el ${new Date(`${fecha}T12:00:00${ZONA}`).toLocaleDateString('es-GT', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Guatemala' }).replace(',', '')} a ${horaHablada(hora)}`
+/** "las 4 y 30 de la tarde" (hoy), "el domingo 1 de noviembre a las…", o "hoy, sin hora definida" */
+function cuandoHablado(fecha: string, hora: string | null) {
+  const dia =
+    fecha === hoyGuatemala()
+      ? null
+      : `el ${new Date(`${fecha}T12:00:00${ZONA}`).toLocaleDateString('es-GT', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Guatemala' }).replace(',', '')}`
+  if (!hora) return `${dia ?? 'hoy'}, sin hora definida`
+  return dia ? `${dia} a ${horaHablada(hora)}` : horaHablada(hora)
+}
 
 export const avisoNueva = (e: Entrega): Aviso => ({
   id: `nueva-${e.id}`,
   titulo: `Nueva entrega · ${e.nombre}`,
-  cuerpo: `${diaTexto(e.fecha)} a las ${hora12(e.hora)} · ${fiambres(e)}\n${e.direccion}`,
+  cuerpo: `${cuandoTexto(e.fecha, e.hora)} · ${fiambres(e)}\n${e.direccion}`,
   url: urlDia(e.fecha),
   voz: `Nueva entrega registrada para ${cuandoHablado(e.fecha, e.hora)}, para la dirección ${e.direccion}`,
 })
@@ -134,7 +142,7 @@ export function avisoCambio(antes: Entrega, despues: Entrega, numero: number): A
   const cambioLugar = antes.direccion !== despues.direccion || antes.lat !== despues.lat || antes.lng !== despues.lng
   if (!cambioHora && !cambioLugar) return null
   const partes = []
-  if (cambioHora) partes.push(`ahora ${diaTexto(despues.fecha)} a las ${hora12(despues.hora)}`)
+  if (cambioHora) partes.push(`ahora ${cuandoTexto(despues.fecha, despues.hora)}`)
   if (cambioLugar) partes.push(`nueva dirección: ${despues.direccion}`)
   const nuevoHorario = cuandoHablado(despues.fecha, despues.hora)
   return {
@@ -183,13 +191,16 @@ export async function revisarUrgencias(db: Db) {
       and(
         eq(entregas.fecha, hoy),
         eq(entregas.entregado, false),
+        // Sin hora definida no hay advertencia ni atraso
+        isNotNull(entregas.hora),
         distintoDe(entregas.avisoEnviado, 'urgente'),
       ),
     )
 
   let enviados = 0
   for (const e of pendientes) {
-    const min = minutosPara(e)
+    if (!e.hora) continue
+    const min = minutosPara({ fecha: e.fecha, hora: e.hora })
     const nivel = min < 0 ? 'urgente' : min <= minutosAdvertencia ? 'advertencia' : null
     if (!nivel || nivel === e.avisoEnviado) continue
 
