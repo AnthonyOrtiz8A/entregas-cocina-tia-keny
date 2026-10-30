@@ -1,18 +1,17 @@
 import { Circle, Marker, Popup, useMap } from 'react-leaflet'
-import { esUbicacionVieja, haceCuanto, useUbicacionesRepartidores } from '../../hooks/useUbicaciones'
-import { iconoRepartidor, iconoYo } from '../../lib/mapa'
-import { useAuth } from '../../store/auth'
+import { esUbicacionVieja, haceCuanto, useUbicacionesEquipo } from '../../hooks/useUbicaciones'
+import { iconoCompanero, iconoYo } from '../../lib/mapa'
 import { useUbicacion } from '../../store/ubicacion'
 import { claseBotonMapa } from './MarcoMapa'
 
-/**
- * Capa común para los mapas:
- * - repartidor: su propio punto azul
- * - administrador: dónde está cada repartidor
- */
+/** Capa común para los mapas: tu punto azul y dónde está cada persona del equipo */
 export function CapaUbicaciones() {
-  const rol = useAuth((s) => s.usuario?.rol)
-  return rol === 'admin' ? <Repartidores /> : <MiPunto />
+  return (
+    <>
+      <Equipo />
+      <MiPunto />
+    </>
+  )
 }
 
 function MiPunto() {
@@ -35,17 +34,17 @@ function MiPunto() {
   )
 }
 
-function Repartidores() {
-  const { data = [] } = useUbicacionesRepartidores()
-  return data.map((r) => {
-    const viejo = esUbicacionVieja(r.actualizadoEn)
+function Equipo() {
+  const { data = [] } = useUbicacionesEquipo()
+  return data.map((u) => {
+    const viejo = esUbicacionVieja(u.actualizadoEn)
     return (
-      <Marker key={r.usuarioId} position={[r.lat, r.lng]} icon={iconoRepartidor(r.nombre, viejo)} zIndexOffset={900}>
+      <Marker key={u.usuarioId} position={[u.lat, u.lng]} icon={iconoCompanero(u.nombre, u.rol, viejo)} zIndexOffset={900}>
         <Popup>
-          <p className="font-semibold">{r.nombre}</p>
+          <p className="font-semibold">{u.nombre}</p>
           <p className="text-sm">
-            {viejo ? 'Última ubicación ' : 'Actualizado '}
-            {haceCuanto(r.actualizadoEn)}
+            {u.rol === 'admin' ? 'Administrador' : 'Repartidor'} · {viejo ? 'última ubicación ' : 'actualizado '}
+            {haceCuanto(u.actualizadoEn)}
           </p>
         </Popup>
       </Marker>
@@ -53,15 +52,19 @@ function Repartidores() {
   })
 }
 
-/** Botón dentro del mapa: el repartidor se centra en sí mismo; el admin, en los repartidores */
+/** Botones dentro del mapa: centrarse en uno mismo y ver al resto del equipo */
 export function BotonUbicacion() {
-  const rol = useAuth((s) => s.usuario?.rol)
-  return rol === 'admin' ? <BotonVerRepartidores /> : <BotonCentrarEnMi />
+  return (
+    <>
+      <BotonCentrarEnMi />
+      <BotonVerEquipo />
+    </>
+  )
 }
 
-function BotonVerRepartidores() {
+function BotonVerEquipo() {
   const mapa = useMap()
-  const { data = [] } = useUbicacionesRepartidores()
+  const { data = [] } = useUbicacionesEquipo()
   if (data.length === 0) return null
   return (
     <button
@@ -71,19 +74,21 @@ function BotonVerRepartidores() {
         data.length === 1
           ? mapa.flyTo([data[0]!.lat, data[0]!.lng], 17)
           : mapa.flyToBounds(
-              data.map((r) => [r.lat, r.lng] as [number, number]),
+              data.map((u) => [u.lat, u.lng] as [number, number]),
               { padding: [60, 60], maxZoom: 17 },
             )
       }
     >
-      🛵 {data.length === 1 ? data[0]!.nombre.split(' ')[0] : `Repartidores (${data.length})`}
+      🛵 {data.length === 1 ? data[0]!.nombre.split(' ')[0] : `Equipo (${data.length})`}
     </button>
   )
 }
 
 function BotonCentrarEnMi() {
   const mapa = useMap()
+  const compartir = useUbicacion((s) => s.compartir)
   const yo = useUbicacion((s) => s.miUbicacion)
+  if (!compartir) return null
   return (
     <button
       type="button"

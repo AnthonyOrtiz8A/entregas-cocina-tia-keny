@@ -235,7 +235,7 @@ function FormularioEntrega({ entrega }: { entrega?: Entrega }) {
 
         <div className="grid gap-4 sm:grid-cols-[1fr_10rem]">
           <Campo label="Extras (opcional)" error={errors.extras?.message}>
-            <input className="input" placeholder="Ej. 2 litros de horchata, pan extra" {...register('extras')} />
+            <input className="input" {...register('extras')} />
           </Campo>
           <Campo label="Costo de extras (Q)" error={errors.extrasMonto?.message}>
             <input

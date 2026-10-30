@@ -3,7 +3,6 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import { ubicaciones, usuarios } from '../db/schema.js'
 import { parseBody } from '../lib/validate.js'
-import { requireRole } from '../middleware/auth.js'
 import type { AppEnv } from '../types.js'
 
 const ubicacionSchema = z.object({
@@ -33,13 +32,14 @@ export const ubicacionRoutes = new Hono<AppEnv>()
     return c.body(null, 204)
   })
 
-  // Administradores: dónde están los repartidores
-  .get('/repartidores', requireRole('admin'), async (c) => {
+  // Todos ven dónde están todos los que comparten su ubicación
+  .get('/', async (c) => {
     const desde = new Date(Date.now() - HORAS_VIGENCIA * 3_600_000)
     const rows = await c.var.db
       .select({
         usuarioId: ubicaciones.usuarioId,
         nombre: usuarios.nombre,
+        rol: usuarios.rol,
         lat: ubicaciones.lat,
         lng: ubicaciones.lng,
         precision: ubicaciones.precision,
@@ -47,7 +47,7 @@ export const ubicacionRoutes = new Hono<AppEnv>()
       })
       .from(ubicaciones)
       .innerJoin(usuarios, eq(usuarios.id, ubicaciones.usuarioId))
-      .where(and(eq(usuarios.activo, true), eq(usuarios.rol, 'repartidor'), gte(ubicaciones.actualizadoEn, desde)))
+      .where(and(eq(usuarios.activo, true), gte(ubicaciones.actualizadoEn, desde)))
       .orderBy(asc(usuarios.nombre))
     return c.json(rows)
   })

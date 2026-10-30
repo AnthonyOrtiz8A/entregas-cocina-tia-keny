@@ -1,8 +1,17 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
+import toast from 'react-hot-toast'
 import { NavLink, Outlet, useNavigate } from 'react-router'
+import { useAvisos } from '../hooks/useAvisos'
 import { useSeguimientoUbicacion } from '../hooks/useUbicaciones'
 import { api } from '../lib/api'
+import {
+  activarNotificaciones,
+  esIphoneSinInstalar,
+  notificacionesSoportadas,
+  pushSoportado,
+  quitarSuscripcion,
+} from '../lib/avisos'
 import { useAuth, useEsAdmin } from '../store/auth'
 import { useUbicacion } from '../store/ubicacion'
 import type { Usuario } from '../types'
@@ -19,6 +28,7 @@ export function Layout() {
   const qc = useQueryClient()
 
   useSeguimientoUbicacion()
+  useAvisos()
 
   // Refresca nombre y rol por si un administrador los cambió
   const { data: yo } = useQuery({
@@ -31,8 +41,8 @@ export function Layout() {
   }, [yo, setUsuario])
 
   async function salir() {
-    // El repartidor deja de aparecer en el mapa del administrador al cerrar sesión
-    if (!esAdmin) await api.delete('/ubicacion').catch(() => {})
+    // Deja de aparecer en el mapa y este teléfono deja de recibir avisos de esta cuenta
+    await Promise.allSettled([api.delete('/ubicacion'), quitarSuscripcion()])
     cerrarSesion()
     qc.clear()
     navigate('/login', { replace: true })
@@ -69,12 +79,12 @@ export function Layout() {
                 Precios
               </NavLink>
             </>
-          ) : (
-            <InterruptorUbicacion />
-          )}
+          ) : null}
+          <InterruptorUbicacion />
         </nav>
       </header>
       <AvisoUbicacion />
+      <AvisoNotificaciones />
       <main className="mx-auto max-w-5xl px-4 py-4 pb-16">
         <Outlet />
       </main>
@@ -132,10 +142,69 @@ function InterruptorUbicacion() {
   )
 }
 
+// Invita a activar las notificaciones del teléfono (el permiso solo se puede pedir con un toque)
+function AvisoNotificaciones() {
+  const [permiso, setPermiso] = useState(() => (notificacionesSoportadas() ? Notification.permission : 'denied'))
+  const [oculto, setOculto] = useState(() => sessionStorage.getItem('ocultar-aviso-notificaciones') === '1')
+  const [activando, setActivando] = useState(false)
+
+  if (oculto) return null
+
+  if (esIphoneSinInstalar() && !pushSoportado()) {
+    return (
+      <BarraAviso onCerrar={() => ocultar()}>
+        🔔 Para recibir notificaciones en iPhone: toca <b>Compartir</b> → <b>Agregar a pantalla de inicio</b> y abre la
+        app desde ese ícono.
+      </BarraAviso>
+    )
+  }
+  if (permiso !== 'default') return null
+
+  function ocultar() {
+    sessionStorage.setItem('ocultar-aviso-notificaciones', '1')
+    setOculto(true)
+  }
+
+  async function activar() {
+    setActivando(true)
+    try {
+      const resultado = await activarNotificaciones()
+      setPermiso(resultado)
+      if (resultado === 'granted') toast.success('Notificaciones activadas')
+      else toast.error('No se dio permiso para las notificaciones')
+    } catch {
+      toast.error('No se pudieron activar las notificaciones')
+    } finally {
+      setActivando(false)
+    }
+  }
+
+  return (
+    <BarraAviso onCerrar={ocultar}>
+      <span>🔔 Activa las notificaciones para enterarte de entregas nuevas, cambios y atrasos.</span>
+      <button className="btn-primario ml-2 py-1 text-xs" onClick={activar} disabled={activando}>
+        {activando ? 'Activando…' : 'Activar'}
+      </button>
+    </BarraAviso>
+  )
+}
+
+function BarraAviso({ children, onCerrar }: { children: ReactNode; onCerrar: () => void }) {
+  return (
+    <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900">
+      <div className="mx-auto flex max-w-5xl items-center gap-2">
+        <div className="flex flex-1 flex-wrap items-center gap-y-1">{children}</div>
+        <button onClick={onCerrar} className="px-2 text-amber-700" aria-label="Cerrar aviso">
+          ✕
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function AvisoUbicacion() {
-  const esRepartidor = useAuth((s) => s.usuario?.rol === 'repartidor')
   const { compartir, error } = useUbicacion()
-  if (!esRepartidor || !compartir || !error) return null
+  if (!compartir || !error) return null
   return (
     <div className="border-b border-red-200 bg-red-50 px-4 py-2 text-center text-sm text-red-800">{error}</div>
   )

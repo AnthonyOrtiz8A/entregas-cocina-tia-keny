@@ -3,7 +3,8 @@ import type { Usuario } from '../db/schema.js'
 import type { TokenPayload } from '../types.js'
 
 const ACCESS_TTL = 60 * 30 // 30 minutos
-const REFRESH_TTL = 60 * 60 * 24 * 30 // 30 días
+// Cada renovación entrega uno nuevo: la sesión solo vence tras 90 días sin abrir la app
+const REFRESH_TTL = 60 * 60 * 24 * 90
 
 export async function createTokens(user: Pick<Usuario, 'id' | 'rol' | 'nombre'>, secret: string) {
   const now = Math.floor(Date.now() / 1000)

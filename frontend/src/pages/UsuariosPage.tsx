@@ -1,7 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { type FormEvent, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { z } from 'zod'
+import { CampoContrasena } from '../components/CampoContrasena'
 import { useCrearUsuario, useEditarUsuario, useUsuarios } from '../hooks/useUsuarios'
 import { mensajeError } from '../lib/api'
 import { useAuth } from '../store/auth'
@@ -48,15 +50,54 @@ function FilaUsuario({ usuario: u }: { usuario: Usuario }) {
     editar.mutate(cambios, { onSuccess: () => toast.success(ok), onError: (err) => toast.error(mensajeError(err)) })
   }
 
-  function cambiarPassword() {
-    const password = prompt(`Nueva contraseña para ${u.nombre} (mínimo 6 caracteres):`)
-    if (password === null) return
+  const [cambiandoPassword, setCambiandoPassword] = useState(false)
+  const [password, setPassword] = useState('')
+
+  function guardarPassword(ev: FormEvent) {
+    ev.preventDefault()
     if (password.length < 6) return toast.error('La contraseña debe tener al menos 6 caracteres')
-    aplicar({ id: u.id, password }, 'Contraseña actualizada')
+    editar.mutate(
+      { id: u.id, password },
+      {
+        onSuccess: () => {
+          toast.success('Contraseña actualizada')
+          setCambiandoPassword(false)
+          setPassword('')
+        },
+        onError: (err) => toast.error(mensajeError(err)),
+      },
+    )
   }
 
   return (
     <div className={`tarjeta flex flex-wrap items-center gap-3 p-4 ${u.activo ? '' : 'opacity-60'}`}>
+      {cambiandoPassword && (
+        <form onSubmit={guardarPassword} className="order-last flex w-full flex-wrap items-end gap-2 border-t border-stone-200 pt-3">
+          <label className="min-w-48 flex-1">
+            <span className="label">Nueva contraseña para {u.nombre}</span>
+            <CampoContrasena
+              autoComplete="new-password"
+              autoFocus
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Mínimo 6 caracteres"
+            />
+          </label>
+          <button className="btn-primario" disabled={editar.isPending}>
+            Guardar
+          </button>
+          <button
+            type="button"
+            className="btn-secundario"
+            onClick={() => {
+              setCambiandoPassword(false)
+              setPassword('')
+            }}
+          >
+            Cancelar
+          </button>
+        </form>
+      )}
       <div className="min-w-0 flex-1">
         <p className="font-semibold">
           {u.nombre} {soyYo && <span className="text-xs font-normal text-stone-500">(tú)</span>}
@@ -77,7 +118,11 @@ function FilaUsuario({ usuario: u }: { usuario: Usuario }) {
           <option value="repartidor">Repartidor</option>
           <option value="admin">Administrador</option>
         </select>
-        <button className="btn-secundario py-1.5" onClick={cambiarPassword} disabled={editar.isPending}>
+        <button
+          className="btn-secundario py-1.5"
+          onClick={() => setCambiandoPassword((v) => !v)}
+          disabled={editar.isPending}
+        >
           Contraseña
         </button>
         {!soyYo && (
@@ -133,7 +178,7 @@ function NuevoUsuario() {
       </label>
       <label className="block">
         <span className="label">Contraseña</span>
-        <input className="input" type="text" autoComplete="new-password" {...register('password')} />
+        <CampoContrasena autoComplete="new-password" {...register('password')} />
         {errors.password && <span className="error block">{errors.password.message}</span>}
       </label>
       <label className="block">

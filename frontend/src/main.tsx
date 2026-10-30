@@ -7,6 +7,7 @@ import { Link, Navigate, RouterProvider, createBrowserRouter } from 'react-route
 import { Layout } from './components/Layout'
 import { RutaProtegida } from './components/RutaProtegida'
 import './index.css'
+import { registrarServiceWorker } from './lib/avisos'
 import { ConfiguracionPage } from './pages/ConfiguracionPage'
 import { EntregaFormPage } from './pages/EntregaFormPage'
 import { EntregasPage } from './pages/EntregasPage'
@@ -59,6 +60,9 @@ const router = createBrowserRouter([
     ],
   },
 ])
+
+// Necesario para recibir notificaciones con la app cerrada
+registrarServiceWorker()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

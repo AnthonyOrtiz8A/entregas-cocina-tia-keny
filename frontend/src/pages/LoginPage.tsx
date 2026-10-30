@@ -1,10 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { Navigate, useLocation, useNavigate } from 'react-router'
 import { z } from 'zod'
+import { CampoContrasena } from '../components/CampoContrasena'
 import { api, mensajeError } from '../lib/api'
 import { useAuth } from '../store/auth'
 import type { Sesion } from '../types'
@@ -103,7 +103,7 @@ function FormularioLogin({ destino }: { destino: string }) {
         <label className="label" htmlFor="password">
           Contraseña
         </label>
-        <input id="password" type="password" className="input" autoComplete="current-password" {...register('password')} />
+        <CampoContrasena id="password" autoComplete="current-password" {...register('password')} />
         {errors.password && <p className="error">{errors.password.message}</p>}
       </div>
       <button className="btn-primario w-full" disabled={isSubmitting}>
@@ -116,7 +116,6 @@ function FormularioLogin({ destino }: { destino: string }) {
 function FormularioSetup({ destino }: { destino: string }) {
   const setSesion = useAuth((s) => s.setSesion)
   const navigate = useNavigate()
-  const [verPassword, setVerPassword] = useState(false)
   const {
     register,
     handleSubmit,
@@ -133,8 +132,6 @@ function FormularioSetup({ destino }: { destino: string }) {
       toast.error(mensajeError(err))
     }
   })
-
-  const tipo = verPassword ? 'text' : 'password'
 
   return (
     <form onSubmit={onSubmit} className="space-y-4" noValidate>
@@ -160,20 +157,16 @@ function FormularioSetup({ destino }: { destino: string }) {
         <label className="label" htmlFor="password">
           Contraseña
         </label>
-        <input id="password" type={tipo} className="input" autoComplete="new-password" {...register('password')} />
+        <CampoContrasena id="password" autoComplete="new-password" {...register('password')} />
         {errors.password && <p className="error">{errors.password.message}</p>}
       </div>
       <div>
         <label className="label" htmlFor="confirmar">
           Repite la contraseña
         </label>
-        <input id="confirmar" type={tipo} className="input" autoComplete="new-password" {...register('confirmar')} />
+        <CampoContrasena id="confirmar" autoComplete="new-password" {...register('confirmar')} />
         {errors.confirmar && <p className="error">{errors.confirmar.message}</p>}
       </div>
-      <label className="flex items-center gap-2 text-sm text-stone-600">
-        <input type="checkbox" checked={verPassword} onChange={(e) => setVerPassword(e.target.checked)} />
-        Mostrar contraseña
-      </label>
       <button className="btn-primario w-full" disabled={isSubmitting}>
         {isSubmitting ? 'Creando…' : 'Crear administrador'}
       </button>
