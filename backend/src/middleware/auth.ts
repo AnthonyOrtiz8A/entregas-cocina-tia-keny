@@ -1,8 +1,8 @@
 import { createMiddleware } from 'hono/factory'
 import { HTTPException } from 'hono/http-exception'
-import { config } from '../config'
-import { readToken } from '../lib/tokens'
-import type { AppEnv, Rol } from '../types'
+import { config } from '../config.js'
+import { readToken } from '../lib/tokens.js'
+import type { AppEnv, Rol } from '../types.js'
 
 export const requireAuth = createMiddleware<AppEnv>(async (c, next) => {
   const header = c.req.header('Authorization')

@@ -2,10 +2,10 @@ import { and, asc, count, eq, gte, sql, sum } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
-import { entregas } from '../db/schema'
-import { parseBody } from '../lib/validate'
-import { requireRole } from '../middleware/auth'
-import type { AppEnv } from '../types'
+import { entregas } from '../db/schema.js'
+import { parseBody } from '../lib/validate.js'
+import { requireRole } from '../middleware/auth.js'
+import type { AppEnv } from '../types.js'
 
 const fechaSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Formato de fecha AAAA-MM-DD')
 

@@ -1,4 +1,4 @@
-import type { Db } from './db/client'
+import type { Db } from './db/client.js'
 
 export type Rol = 'admin' | 'repartidor'
 

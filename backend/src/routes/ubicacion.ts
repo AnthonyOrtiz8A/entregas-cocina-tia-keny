@@ -1,10 +1,10 @@
 import { and, asc, eq, gte } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
-import { ubicaciones, usuarios } from '../db/schema'
-import { parseBody } from '../lib/validate'
-import { requireRole } from '../middleware/auth'
-import type { AppEnv } from '../types'
+import { ubicaciones, usuarios } from '../db/schema.js'
+import { parseBody } from '../lib/validate.js'
+import { requireRole } from '../middleware/auth.js'
+import type { AppEnv } from '../types.js'
 
 const ubicacionSchema = z.object({
   lat: z.number().min(-90).max(90),
