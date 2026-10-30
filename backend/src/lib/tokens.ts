@@ -1,6 +1,6 @@
 import { sign, verify } from 'hono/jwt'
-import type { Usuario } from '../db/schema'
-import type { TokenPayload } from '../types'
+import type { Usuario } from '../db/schema.js'
+import type { TokenPayload } from '../types.js'
 
 const ACCESS_TTL = 60 * 30 // 30 minutos
 const REFRESH_TTL = 60 * 60 * 24 * 30 // 30 días

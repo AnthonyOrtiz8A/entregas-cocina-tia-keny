@@ -2,12 +2,12 @@ import { asc, eq } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
-import { usuarios } from '../db/schema'
-import { hashPassword } from '../lib/password'
-import { publicUser } from '../lib/tokens'
-import { parseBody } from '../lib/validate'
-import { requireRole } from '../middleware/auth'
-import type { AppEnv } from '../types'
+import { usuarios } from '../db/schema.js'
+import { hashPassword } from '../lib/password.js'
+import { publicUser } from '../lib/tokens.js'
+import { parseBody } from '../lib/validate.js'
+import { requireRole } from '../middleware/auth.js'
+import type { AppEnv } from '../types.js'
 
 const crearSchema = z.object({
   nombre: z.string().trim().min(2),

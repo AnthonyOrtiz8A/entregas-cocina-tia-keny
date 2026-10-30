@@ -1,6 +1,6 @@
 import { serve } from '@hono/node-server'
-import { config } from './config'
-import { app } from './index'
+import { config } from './config.js'
+import { app } from './index.js'
 
 // Cloud Run define PORT (8080); en local se usa 8787
 const server = serve({ fetch: app.fetch, port: config.port, hostname: '0.0.0.0' }, (info) => {
