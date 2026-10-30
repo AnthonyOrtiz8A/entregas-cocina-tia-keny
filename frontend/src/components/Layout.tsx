@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import { NavLink, Outlet, useNavigate } from 'react-router'
 import { useAvisos } from '../hooks/useAvisos'
 import { useSeguimientoUbicacion } from '../hooks/useUbicaciones'
+import { PanelNotificaciones } from './PanelNotificaciones'
 import { api } from '../lib/api'
 import {
   activarNotificaciones,
@@ -26,6 +27,7 @@ export function Layout() {
   const esAdmin = useEsAdmin()
   const navigate = useNavigate()
   const qc = useQueryClient()
+  const [verNotificaciones, setVerNotificaciones] = useState(false)
 
   useSeguimientoUbicacion()
   useAvisos()
@@ -58,6 +60,14 @@ export function Layout() {
               {usuario?.nombre} · {usuario?.rol === 'admin' ? 'Administrador' : 'Repartidor'}
             </p>
           </div>
+          <button
+            onClick={() => setVerNotificaciones((v) => !v)}
+            className={`rounded-lg px-2.5 py-1.5 text-lg leading-none hover:bg-white/10 ${verNotificaciones ? 'bg-white/15' : ''}`}
+            aria-label="Notificaciones"
+            title="Notificaciones"
+          >
+            🔔
+          </button>
           <BotonPantallaCompleta />
           <button onClick={salir} className="rounded-lg px-3 py-1.5 text-sm text-marca-100 hover:bg-white/10">
             Salir
@@ -84,7 +94,7 @@ export function Layout() {
         </nav>
       </header>
       <AvisoUbicacion />
-      <AvisoNotificaciones />
+      {verNotificaciones ? <PanelNotificaciones onCerrar={() => setVerNotificaciones(false)} /> : <AvisoNotificaciones />}
       <main className="mx-auto max-w-5xl px-4 py-4 pb-16">
         <Outlet />
       </main>

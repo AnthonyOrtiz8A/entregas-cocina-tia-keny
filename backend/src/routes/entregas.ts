@@ -86,7 +86,7 @@ export const entregaRoutes = new Hono<AppEnv>()
       .insert(entregas)
       .values({ ...data, creadoPor: c.var.user.sub })
       .returning()
-    await notificar(c.var.db, avisoNueva(row!), c.var.user.sub)
+    await notificar(c.var.db, avisoNueva(row!), { excepto: c.var.user.sub })
     return c.json(row, 201)
   })
 
@@ -107,7 +107,7 @@ export const entregaRoutes = new Hono<AppEnv>()
       throw new HTTPException(409, { message: 'La entrega ya fue entregada. Deshaz la entrega para poder editarla.' })
     }
     const aviso = avisoCambio(antes, row)
-    if (aviso) await notificar(c.var.db, aviso, c.var.user.sub)
+    if (aviso) await notificar(c.var.db, aviso, { excepto: c.var.user.sub })
     return c.json(row)
   })
 

@@ -25,14 +25,25 @@ if (config.vapid.publica && config.vapid.privada) {
 
 export const pushActivo = () => vapidValido
 
-/** Envía una notificación a todos los usuarios activos (menos `excepto`, quien hizo el cambio) */
-export async function notificar(db: Db, aviso: Aviso, excepto?: number) {
-  if (!pushActivo()) return
+/**
+ * Envía una notificación a los usuarios activos: a todos menos `excepto` (quien hizo el cambio),
+ * o solo a `soloUsuario` (para la prueba de notificaciones).
+ */
+export async function notificar(db: Db, aviso: Aviso, { excepto, soloUsuario }: { excepto?: number; soloUsuario?: number } = {}) {
+  const resultado = { telefonos: 0, enviados: 0, errores: [] as string[] }
+  if (!pushActivo()) return resultado
   const destinos = await db
     .select({ id: suscripciones.id, endpoint: suscripciones.endpoint, p256dh: suscripciones.p256dh, auth: suscripciones.auth })
     .from(suscripciones)
     .innerJoin(usuarios, eq(usuarios.id, suscripciones.usuarioId))
-    .where(and(eq(usuarios.activo, true), excepto ? ne(suscripciones.usuarioId, excepto) : undefined))
+    .where(
+      and(
+        eq(usuarios.activo, true),
+        excepto ? ne(suscripciones.usuarioId, excepto) : undefined,
+        soloUsuario ? eq(suscripciones.usuarioId, soloUsuario) : undefined,
+      ),
+    )
+  resultado.telefonos = destinos.length
 
   const payload = JSON.stringify({ url: '/entregas', ...aviso })
   const vencidas: number[] = []
@@ -44,13 +55,19 @@ export async function notificar(db: Db, aviso: Aviso, excepto?: number) {
           urgency: 'high',
           timeout: 8_000,
         })
-        .catch((err: { statusCode?: number }) => {
+        .then(() => {
+          resultado.enviados++
+        })
+        .catch((err: { statusCode?: number; body?: string; message?: string }) => {
+          resultado.errores.push(`${err.statusCode ?? ''} ${err.body || err.message || 'error'}`.trim().slice(0, 200))
           // 404/410: el navegador anuló el permiso o se desinstaló la app
           if (err.statusCode === 404 || err.statusCode === 410) vencidas.push(s.id)
         }),
     ),
   )
   if (vencidas.length) await db.delete(suscripciones).where(inArray(suscripciones.id, vencidas))
+  if (resultado.errores.length) console.error('Errores al enviar notificaciones:', resultado.errores)
+  return resultado
 }
 
 // --- Textos ---

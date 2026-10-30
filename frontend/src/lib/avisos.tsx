@@ -55,7 +55,7 @@ export const avisoUrgencia = (e: Entrega, nivel: 'advertencia' | 'urgente'): Avi
 
 // --- Mostrar ---
 
-/** Toast dentro de la app y, si la app no está a la vista, también notificación del teléfono */
+/** Toast dentro de la app y también notificación del teléfono (si dio permiso) */
 export function avisar(aviso: Aviso) {
   const urgente = aviso.id.startsWith('urgente')
   toast(
@@ -69,12 +69,13 @@ export function avisar(aviso: Aviso) {
       icon: aviso.id.startsWith('nueva') ? '🆕' : urgente ? '🚨' : aviso.id.startsWith('advertencia') ? '⏰' : '✏️',
     },
   )
-  if (document.visibilityState === 'hidden') mostrarNotificacion(aviso)
+  mostrarNotificacion(aviso).catch(() => {})
 }
 
+// Si el mismo aviso llega también por push, el mismo `tag` hace que se reemplace y no se repita
 async function mostrarNotificacion(aviso: Aviso) {
-  if (!('Notification' in window) || Notification.permission !== 'granted') return
-  const reg = await navigator.serviceWorker?.getRegistration()
+  if (!notificacionesSoportadas() || Notification.permission !== 'granted') return
+  const reg = await navigator.serviceWorker.getRegistration()
   await reg?.showNotification(aviso.titulo, {
     body: aviso.cuerpo,
     tag: aviso.id,
@@ -111,11 +112,15 @@ function claveABytes(base64: string) {
   return Uint8Array.from(binario, (c) => c.charCodeAt(0))
 }
 
+export type EstadoSuscripcion = 'sin-soporte' | 'sin-permiso' | 'servidor-sin-claves' | 'suscrito'
+
 /** Suscribe este teléfono al usuario actual (si ya dio permiso) */
-export async function sincronizarSuscripcion() {
-  if (!pushSoportado() || Notification.permission !== 'granted') return
+export async function sincronizarSuscripcion(): Promise<EstadoSuscripcion> {
+  if (!pushSoportado()) return 'sin-soporte'
+  if (Notification.permission !== 'granted') return 'sin-permiso'
   const { data } = await api.get<{ clave: string | null }>('/push/clave')
-  if (!data.clave) return // el servidor no tiene push configurado: quedan los avisos dentro de la app
+  // Sin claves en el servidor quedan los toasts y las notificaciones con la app abierta
+  if (!data.clave) return 'servidor-sin-claves'
   const reg = await navigator.serviceWorker.ready
   const clave = claveABytes(data.clave)
 
@@ -128,6 +133,7 @@ export async function sincronizarSuscripcion() {
   }
   sub ??= await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: clave })
   await api.post('/push/suscripcion', sub.toJSON())
+  return 'suscrito'
 }
 
 /** Pide permiso (debe llamarse desde un toque del usuario) y suscribe */
@@ -135,6 +141,20 @@ export async function activarNotificaciones() {
   const permiso = await Notification.requestPermission()
   if (permiso === 'granted') await sincronizarSuscripcion()
   return permiso
+}
+
+export interface ResultadoPrueba {
+  configurado: boolean
+  telefonos: number
+  enviados: number
+  errores: string[]
+}
+
+/** Manda una notificación de prueba a los teléfonos del usuario actual */
+export async function probarNotificaciones() {
+  const estado = await sincronizarSuscripcion()
+  const { data } = await api.post<ResultadoPrueba>('/push/prueba')
+  return { estado, ...data }
 }
 
 /** Al cerrar sesión este teléfono deja de recibir avisos de esa cuenta */
